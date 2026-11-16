@@ -1,0 +1,24 @@
+Water pouring into glass bowl 01 — Rudmer_Rotteveel
+https://freesound.org/people/Rudmer_Rotteveel/sounds/700352/
+License: CC0 https://creativecommons.org/publicdomain/zero/1.0/
+Source: official HQ MP3 preview, retrieved 2026-11-13.
+Adaptation: excerpt, mono, high/low-pass filtering, noise reduction, fades, gain.
+
+water-jet-clean.wav: 1.10–2.30 s excerpt; 220 Hz high-pass, -5 dB at 430 Hz, 3100 Hz low-pass, FFT noise reduction, transient compression, gain, short fades. Runtime amplitude follows pour-motion.mjs source flow and delayed impact.
+
+New soft-jet recording (2026-11-14):
+Slowly Pouring Water Into A Glass — jbeetle
+https://freesound.org/people/jbeetle/sounds/274690/
+CC0 https://creativecommons.org/publicdomain/zero/1.0/
+Official HQ preview: https://cdn.freesound.org/previews/274/274690_3029356-hq.mp3
+water-soft-jet.wav: 2.50–3.70 s excerpt, mono, 110 Hz HP, 6000 Hz LP, short fades, gain 1.1. No FFT denoise or compression.
+
+Drips — DinoKid
+https://freesound.org/people/DinoKid/sounds/863012/
+CC0 https://creativecommons.org/publicdomain/zero/1.0/
+Official HQ preview: https://cdn.freesound.org/previews/863/863012_2586361-hq.mp3
+water-final-drops.wav: three recorded transients, 110 Hz HP / 6500 Hz LP, fades, decreasing gain; offsets 0, 0.110, 0.198 s.
+
+2026-11-14 soft v2: existing CC0 jet filtered at 3200 Hz, -9 dB EQ at 5200 Hz, gain .88. Single drop uses first 105 ms of the CC0 drop montage, LP 3800 Hz and 40 ms fade. Three runtime events follow FINAL_DROPS impact timestamps exactly.
+
+2026-11-15 v3: same CC0 recordings. Offline 180–2600 Hz band-pass, gentle 45/95 ms level smoothing and soft transient limiting for the jet; 210–2900 Hz band-pass and 85 ms length for droplets. The measured 270-sample drop attack is compensated at runtime, with three subtle playback-rate variations. No added noise or synthesized water. Rebuild: scripts/prepare-water-audio.py.

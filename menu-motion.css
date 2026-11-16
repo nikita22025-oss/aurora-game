@@ -1,0 +1,38 @@
+.home-art{background-image:url('assets/menu-clean-v1.png');background-position:center;background-size:cover}
+.menu-water{position:absolute;left:15%;right:15%;top:26%;height:33%;overflow:hidden;border-radius:50%;contain:paint}
+.menu-fish{position:absolute;width:72px;height:72px;animation:fish-swim 19s ease-in-out infinite;will-change:transform}
+.fish-a{top:15%;left:5%;background-position:0% 50%}.fish-b{top:47%;left:16%;width:49px;height:49px;background-position:50% 50%;animation-delay:-7s;animation-duration:23s}.fish-c{top:62%;left:7%;width:58px;height:58px;background-position:100% 50%;animation-delay:-11s;animation-duration:27s}
+.menu-ray{position:absolute;inset:-15%;background:linear-gradient(110deg,transparent 30%,#eaffff25 40%,transparent 48%,#eaffff15 60%,transparent 68%);animation:ray-drift 9s ease-in-out infinite alternate;pointer-events:none}
+.robot-performance{position:absolute;pointer-events:none;width:clamp(160px,48vw,220px);height:auto;left:50%;transform:translateX(-50%);bottom:245px;z-index:0;contain:layout style}
+.robot-performance svg{display:block;width:100%;overflow:visible}.home-title,.home-top,.home-bottom{z-index:2}
+.motion-paused .menu-fish,.motion-paused .menu-ray,.motion-paused .ocean-shimmer{animation-play-state:paused}
+.still .menu-fish,.still .menu-ray{animation:none}
+@keyframes fish-swim{0%{transform:translate(0,0) scaleX(1)}45%{transform:translate(125px,-12px) scaleX(1)}50%{transform:translate(125px,-12px) scaleX(-1)}95%{transform:translate(0,0) scaleX(-1)}100%{transform:translate(0,0) scaleX(1)}}
+@keyframes ray-drift{from{transform:translateX(-12px);opacity:.3}to{transform:translateX(12px);opacity:.85}}
+@media(max-height:700px){.robot-performance{width:155px;bottom:215px}}
+@media(prefers-reduced-motion:reduce){.menu-fish,.menu-ray{animation:none}}
+
+.menu-fish svg{width:100%;height:100%;display:block}
+.robot-performance svg svg{overflow:hidden}
+
+.robot-performance{left:34%;bottom:248px}
+.home-title h1{font-family:AuroraRounded,sans-serif;font-size:clamp(48px,14vw,64px);letter-spacing:1px;line-height:1.08;font-weight:900;text-shadow:0 4px 0 #146477,0 7px 14px #12516133}
+.home-kicker{font-family:AuroraRounded,sans-serif;font-size:11px;letter-spacing:.7px;font-weight:700;color:#d6fff2}
+.home-subtitle{font-family:AuroraRounded,sans-serif;font-size:14px;letter-spacing:0;font-weight:700}
+.home-chapter,.home-chapter span:first-child{font-family:AuroraRounded,sans-serif;font-size:12px;font-weight:700;letter-spacing:0;color:#e5fff6}
+.home-level{font-family:AuroraRounded,sans-serif;font-size:13px;letter-spacing:0;font-weight:600;color:#d1f3ec}
+.menu-counter{position:absolute;width:175px;right:-24px;bottom:232px;pointer-events:none;z-index:0}
+@media(max-height:700px){.robot-performance{bottom:215px}.menu-counter{bottom:210px;width:145px}}
+
+/* One quiet interface layer, with the scene kept visually separate from controls. */
+.home-top{padding:14px 20px 0}.home-energy,.home-round{background:#176b7938!important;border:1px solid #d6fff12b!important;box-shadow:none!important;border-radius:15px!important;height:38px;min-height:38px}.home-round{width:38px;padding:9px}.home-energy{font-size:16px;min-width:54px;padding:0 10px}
+.home-title{top:76px}.home-title h1{font-size:48px;margin:5px 0 7px;letter-spacing:1.2px;text-shadow:0 3px 0 #176b7d}
+.home-kicker{font-size:10px;font-weight:700;letter-spacing:.6px;color:#d8f4ed}.home-subtitle{background:none;padding:0;color:#e7fff5;font-size:13px;text-shadow:0 1px 4px #155f73aa}
+.home-vignette{background:linear-gradient(180deg,#115e7020,transparent 24%,transparent 61%,#12677caa 80%,#145b71 100%)}
+.home-bottom{padding:0 24px 18px}.home-play{min-height:58px;font-size:24px;border-radius:20px}.home-chapter{margin-bottom:9px}.home-chapter,.home-chapter span:first-child{font-size:11px;font-weight:700}.home-level{font-size:12px;min-height:34px;padding:10px 0}
+.home-nav{background:none;border:0;border-top:1px solid #b9e9dd2b;border-radius:0;padding:10px 0 0;gap:18px}.home-nav button{background:none;box-shadow:none;border:0;border-radius:0;min-height:47px}.home-nav svg{width:22px;height:22px}.home-nav span{font-size:13px;font-weight:800}.home-nav small{font-size:10px;font-weight:600;color:#afd8d8}
+.robot-performance{left:35%;bottom:225px;width:180px}.menu-water{top:27%;height:29%;left:19%;right:19%}.menu-fish{width:52px;height:52px}.fish-b{width:34px;height:34px}.fish-c{width:39px;height:39px}
+@media(max-height:700px){.robot-performance{width:150px;bottom:195px}.home-title{top:65px}.home-title h1{font-size:42px}.home-bottom{padding-bottom:12px}.home-play{min-height:54px}.home-nav{padding-top:7px}}
+
+.home-art{background-image:url('assets/menu-unified-v2.png')}
+.menu-fish img{width:100%;height:100%;object-fit:contain;display:block}.fish-c{display:none}.fish-b{opacity:.85}
