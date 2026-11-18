@@ -1,10 +1,24 @@
+import {WATER_REFLECTION,GLASS_REFLECTION} from './vector-tube-material.mjs';
 import {pourState,jetSection,stepSlosh,waterOffset,POUR,FINAL_DROPS,smooth,dropShape} from './pour-motion.mjs?v=4';
 import * as T from './vendor/node_modules/three/build/three.module.js';
-import {BoardRenderer as CanvasBoard,COLORS} from './renderer.mjs?v=14';
+import {BoardRenderer as CanvasBoard,COLORS} from './renderer.mjs?v=30';
 import {completeBottle} from './core.mjs';
 import {POUR_TIMING} from './water-foley.mjs';
 import {interior,rotate,surface,FILL,LIP} from './fluid.mjs?v=4';
+function vectorTexture(data,width,height){
+ const pixels=Uint8Array.from(atob(data),ch=>ch.charCodeAt(0));
+ const texture=new T.DataTexture(pixels,width,height,T.RGBAFormat);
+ texture.magFilter=texture.minFilter=T.LinearFilter;
+ texture.needsUpdate=true;
+ return texture;
+}
 const CAMERA_SLOPE=.24,COS=1/Math.sqrt(1+CAMERA_SLOPE**2);
+// Project the same point used by the glass mesh and the free-surface solver.
+function projectedLip(pose, sign) {
+ const [x,y]=rotate([sign*pose.w*LIP,-pose.h/2+5],0,0,pose.a);
+ return [pose.x+x,pose.y+y*COS];
+}
+
 // The canvas underneath retains accessible labels, contact shadows and the stream.
 // Vessels and liquid are true lit meshes, not pre-rendered sprites.
 export class BoardRenderer extends CanvasBoard{
@@ -20,11 +34,8 @@ export class BoardRenderer extends CanvasBoard{
   q.fillStyle='#fff5db';q.fillRect(125,100,105,300);q.fillStyle='#a5e5ff';q.fillRect(700,80,36,330);q.fillStyle='#e3cba6';q.fillRect(430,40,160,45);q.fillStyle='#fff9ed';q.fillRect(255,125,10,265);
   const texture=new T.CanvasTexture(env);texture.mapping=T.EquirectangularReflectionMapping;texture.colorSpace=T.SRGBColorSpace;const pmrem=new T.PMREMGenerator(this.gl);this.envTarget=pmrem.fromEquirectangular(texture);this.scene3.environment=this.envTarget.texture;texture.dispose();pmrem.dispose();
   this.scene3.add(new T.HemisphereLight('#d9f5ff','#314654',1.35));const key=new T.DirectionalLight('#fff1ce',3.0);key.position.set(-250,400,600);this.scene3.add(key);const rim=new T.DirectionalLight('#a4e6ff',1.7);rim.position.set(300,80,-100);this.scene3.add(rim);
-  // Reflection sample from the unobstructed liquid in the upright Vector tube.
-  const pixels = Uint8Array.from(atob("DLXBIcrWItjhA7nCGZSTGpaUIpKMHo2IHoN8Gn94HH5zH4F1J4h2Lo99MJaDNZqIOp+LOp+LOpuFN5mDM49+LIh3LYF0LH9zDLXBH8jTJtfhBLXAF5KRGZSTIpaRI5eSJZGKHoqDHIF3HIF3I4N6KIh+LIp8LYt9MY1+M49/NI1+MIp7L4Z7LYR4KYN2LIV4DLfCHMjSJ9jiA7S+FJCPGJOSIZeRI5mTJ5iSJpeRJpKLH4uEIIF8IYJ9J4R6KIV7LYl8Lop9LYh+KoV8KIN8KIN8JYl/LpKJC7rFG8rWJtfhA7S+FI2NGZKSH5SRIZeTJZiWJpmXKZmWKZmWKJSQIo+KIYqCIImBI4V9JYZ+JYZ+JYZ+I4mCLJGKMJ2WNaGaCrvFGsvWJtffAbK6EouNGZKUH5SRIZeTI5mYJZqZJp2XJ56YKJ+bKJ+bKJ6aJ52ZKZmWKZmWKZmWKpqXLZ2ZMKCdM6KfM6KfC73IGszXJtjdALK2EYyNGJOUG5aTHpiWIJqYIJqYIp2aJZ+dKJ+eKaCfKqGeLaSgLqWhLqWhLqWfLqWfL6WfLaKdLqKbL6SdD8DIH9DYLNjfA6+2EouLGZKSHpSTIJeWIpmYIpmYIZuZI56bJqCeJ6GfKKKgKqWiLaSgLaSgLqSgLqSgLqSgLaKfLqGdLqGdEMPIItbaL9nhA621EouLGZKSHpSTIJeWIZiXIpmYIZuZIp2aJZ+dJ6GfKKGhKqSkLaSgLaSgLqSgLqSgLqSgLaKfLqGfLaCeDcDKH9HbLNbeAauzE4yMGZKSGpSSHJeUHJaWH5iYIJqYIp2aJZ+dJqCeKKKgKaShLqSeLqSeLqSgLqSgLqSgLaKfLaKfLaKfDL7JH9HbKNLZAKivEYqKF5CQGZORG5aTHJaWH5iYIJqYIZuZI56bJqCeJ6GfKaShLaKdLqSeLqSeLaKdLaKfLaKfLqGfLqGfC73KHM/bJ8rUAJ+pDYOEF4yNGZORG5aTHJaWH5iYIZeYIpiZJZuaJ56dJqCeKKKgKqCaLaKdL6KeL6KeLqGdLqGdMKCdL5+bCrvKFMXUILnLAJKlD3x/G4mMG5KRH5aUIZiXIZiXI5mYI5mYJpuYKJ6aKZ+bLKGeLaCbLqGdMaGgMaGgMaCfMaCfMJ+bL56aCbrLC7zNE6e8AImeCnB4GX+IG4+PIZSUIpiXIpiXJZiYJpmZJ5qYKZ2aLZ2bLp6dLaCbLaCbMKCfMKCfNJ+fM56eMZ6ZMJ2YDL3PCbrLEqa7AIidBmdxEnN9G4qLJZOUIpaWIpaWJpaUJ5eWKJiUKZmWKpqXLJuYLp6YLp6YLZ2ZLZ2ZLp2bLp2bMZ2aMJuZEMbbDMPYGrDGAI2kBmdvDW52GoWIJZCSIpaWI5eXJpaUJpaUJ5eTJ5eTKZiUKpmWLJuWLJuWLJuaLZ2bLp6dLp6dMJ+eMaCfE83hE83hH7nQAJGoBmlwDG92GIOFI4+RIZeWIpiXI5mYJZqZJpmZJ5qaKJuZKZ2aKZ2aKZ2aKZ+bKqCdKqGeKqGeL5+bMaGeF83iF83iG7bJAI+hBmVuDGt0F3+DIouPIZSUI5eXJZiYJpmZI5mYJZqZJp2bJ56dKJ+eKJ+eKqCdKqCdKqCdKqCdLaCeLqGfGcreFsbaF6vAAIidC251E3Z9HIiKJpGTI5eXJZiYJZiYJZiYJZqZJpuaJZuaJp2bKJ6dKJ6dJ56aKJ+bKZ+bKqCdLaKfLaKf"), ch => ch.charCodeAt(0));
-  this.waterStudy = new T.DataTexture(pixels,24,18,T.RGBFormat);
-  this.waterStudy.magFilter = this.waterStudy.minFilter = T.LinearFilter;
-  this.waterStudy.needsUpdate = true;
+  this.waterStudy = vectorTexture(WATER_REFLECTION,48,64);
+  this.glassStudy = vectorTexture(GLASS_REFLECTION,48,16);
   this.renderStream3d=true;
   const positions=new Float32Array(33*10*3),indices=[];for(let j=0;j<32;j++)for(let k=0;k<10;k++){const a=j*10+k,b=j*10+(k+1)%10;indices.push(a,b,a+10,b,b+10,a+10);}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();geo.attributes.position.setUsage(T.DynamicDrawUsage);geo.attributes.normal.setUsage(T.DynamicDrawUsage);
   this.stream=new T.Mesh(geo,new T.MeshPhysicalMaterial({color:'#62cddd',roughness:.035,metalness:0,transmission:0,thickness:2,ior:1.333,clearcoat:1,envMapIntensity:1.15,toneMapped:false,transparent:true,opacity:.88,emissive:'#ffffff',emissiveIntensity:.025}));this.stream.frustumCulled=false;this.scene3.add(this.stream);
@@ -42,7 +53,16 @@ export class BoardRenderer extends CanvasBoard{
   const profile=(radius,base,ceiling)=>{const p=[];for(let k=0;k<=16;k++){const a=k*Math.PI/32;p.push(new T.Vector2(Math.sin(a)*radius,base+radius*(1-Math.cos(a))));}p.push(new T.Vector2(radius,ceiling));return p;};
   const outside=profile(outer,bottom,top);const inside=profile(r,innerBottom,top);const closed=[...outside,new T.Vector2(r,top),...inside.slice().reverse()];
   const root=new T.Group();this.scene3.add(root);
-  const shell=new T.Mesh(new T.LatheGeometry(outside,48),new T.MeshPhysicalMaterial({color:'#fffaf2',metalness:0,roughness:.075,transmission:0,thickness:2.0,ior:1.46,envMapIntensity:1.1,clearcoat:1,clearcoatRoughness:.08,side:T.DoubleSide,transparent:true,opacity:.095,depthWrite:false}));shell.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\ngl_FragColor.a *= .32 + .68 * pow(1.0-abs(dot(normal,normalize(vViewPosition))),2.0);');};root.add(shell);shell.renderOrder=4;
+  const shell=new T.Mesh(new T.LatheGeometry(outside,48),new T.MeshPhysicalMaterial({color:'#fffaf2',metalness:0,roughness:.075,transmission:0,thickness:2.0,ior:1.46,envMapIntensity:1.1,clearcoat:1,clearcoatRoughness:.08,side:T.DoubleSide,transparent:true,opacity:.095,depthWrite:false}));shell.material.onBeforeCompile=shader=>{
+   shader.uniforms.studioGlass={value:this.glassStudy};
+   shader.vertexShader='varying vec2 glassSample;\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+    glassSample=vec2(.5+.5*position.x/${outer.toFixed(4)},clamp((position.y+${(h/2).toFixed(4)})/${h.toFixed(4)},0.,1.));`);
+   shader.fragmentShader='uniform sampler2D studioGlass;varying vec2 glassSample;\n'+shader.fragmentShader.replace('#include <opaque_fragment>',`#include <opaque_fragment>
+    vec3 photographed=texture2D(studioGlass,glassSample).rgb;
+    float reflection=max(photographed.r,max(photographed.g,photographed.b));
+    gl_FragColor.rgb=mix(gl_FragColor.rgb,photographed,.75);
+    gl_FragColor.a=.025+.65*smoothstep(.15,.95,reflection);`);
+  };root.add(shell);shell.renderOrder=4;
   const lip=new T.Mesh(new T.TorusGeometry(outer,.85,12,64),new T.MeshStandardMaterial({color:'#f7ead6',roughness:.10,metalness:.08,envMapIntensity:1.3}));lip.rotation.x=Math.PI/2;lip.position.y=top;root.add(lip);
   const collar=new T.Mesh(new T.TorusGeometry(outer-.45,.38,8,64),new T.MeshBasicMaterial({color:'#fff4df',transparent:true,opacity:.45,depthWrite:false}));collar.rotation.x=Math.PI/2;collar.position.y=top-1.8;root.add(collar);
 
@@ -55,7 +75,7 @@ export class BoardRenderer extends CanvasBoard{
    const highlight=new T.Mesh(new T.CapsuleGeometry(width,length,8,12),new T.MeshBasicMaterial({color:'#fff9ed',transparent:true,opacity,depthWrite:false}));
    highlight.position.set(side*outer*.64,top-h*.34,outer*.78);highlight.renderOrder=5;root.add(highlight);
   }
-  const uniforms={waterStudy:{value:this.waterStudy},heights:{value:new T.Vector4(-1000,-1000,-1000,-1000)},colors:{value:COLORS.slice(0,4).map(c=>new T.Color(c))},time:{value:0},wave:{value:0},slope:{value:0},anchor:{value:0},center:{value:new T.Vector2()},radius:{value:r},capSpan:{value:1},inverse:{value:new T.Matrix4()},bottom:{value:innerBottom},top:{value:top},vesselHeight:{value:h},neckRadius:{value:w*LIP}};
+  const uniforms={aeration:{value:0},bubbleClock:{value:0},waterStudy:{value:this.waterStudy},heights:{value:new T.Vector4(-1000,-1000,-1000,-1000)},colors:{value:COLORS.slice(0,4).map(c=>new T.Color(c))},time:{value:0},wave:{value:0},slope:{value:0},anchor:{value:0},center:{value:new T.Vector2()},radius:{value:r},capSpan:{value:1},inverse:{value:new T.Matrix4()},bottom:{value:innerBottom},top:{value:top},vesselHeight:{value:h},neckRadius:{value:w*LIP}};
   // Physical lighting is shared by the outer liquid surface and its cut planes.
   function liquidMaterial(capIndex=-1){return new T.ShaderMaterial({transparent:true,side:T.DoubleSide,forceSinglePass:true,toneMapped:false,
    uniforms:{...uniforms,capIndex:{value:capIndex},opacity:{value:1}},
@@ -64,7 +84,7 @@ export class BoardRenderer extends CanvasBoard{
     float waterHeight(vec2 p){float d=length(p)/radius;float u=clamp(p.x/radius,-1.,1.);return slope*u*(1.+.28*(1.-u*u))+wave*sin(d*6.-time*10.)*exp(-d*1.6)-anchor;}
     void main(){vec3 p=position,n=normal;if(capIndex>=0){p.x*=capSpan;p.y+=waterHeight(p.xz);float e=.35;float dx=(waterHeight(p.xz+vec2(e,0.))-waterHeight(p.xz-vec2(e,0.)))/(2.*e);float dz=(waterHeight(p.xz+vec2(0.,e))-waterHeight(p.xz-vec2(0.,e)))/(2.*e);n=normalize(vec3(-dx,1.,-dz));}
      liquidWorld=(modelMatrix*vec4(p,1.)).xyz;litNormal=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
-   fragmentShader:`uniform sampler2D waterStudy;varying vec3 liquidWorld;varying vec3 litNormal;uniform vec4 heights;uniform vec3 colors[4];uniform float time,wave,slope,anchor,radius,bottom,top,opacity;uniform vec2 center;uniform mat4 inverse;uniform int capIndex;
+   fragmentShader:`uniform float aeration,bubbleClock;uniform sampler2D waterStudy;varying vec3 liquidWorld;varying vec3 litNormal;uniform vec4 heights;uniform vec3 colors[4];uniform float time,wave,slope,anchor,radius,bottom,top,opacity;uniform vec2 center;uniform mat4 inverse;uniform int capIndex;
     void main(){vec2 delta=vec2(liquidWorld.x-center.x,liquidWorld.z-center.y);float distance=length(delta)/radius;
      float u=clamp(delta.x/radius,-1.,1.);float ripple=slope*u*(1.+.28*(1.-u*u))+wave*sin(distance*6.-time*10.)*exp(-distance*1.6)-anchor;float yy=liquidWorld.y-ripple;
      vec3 local=(inverse*vec4(liquidWorld,1.)).xyz;int band=capIndex;
@@ -101,6 +121,26 @@ export class BoardRenderer extends CanvasBoard{
       light=color*(.46+.24*n.y)+vec3(.13,.24,.25)*meniscus+vec3(.16,.26,.28)*impactLight;
       light+=vec3(.34,.39,.39)*exp(-pow((across+.50)/.20,2.))*.7;
      }
+     if(capIndex<0){
+      float immersion=max(0.,heights.w-yy)/radius;
+      float surfaceBand=exp(-immersion*9.);
+      light+=color*surfaceBand*.17;
+      if(aeration>.001 && immersion<2.){
+       // A few air beads carried below the jet, then peeled away by buoyancy.
+       vec2 point=vec2(across,immersion);
+       for(int i=0;i<6;i++){
+        float seed=float(i),age=fract(bubbleClock*(.88+.043*seed)+seed*.382);
+        float depth=(.55+.13*seed)*sin(3.14159*age);
+        float lateral=sin(seed*2.34+age*3.)*(.08+.36*age);
+        vec2 bead=(point-vec2(lateral,depth))/(.038+.006*seed);
+        float d=length(bead),aa=max(fwidth(d),.10);
+        float mask=(1.-smoothstep(1.-aa,1.+aa,d))*aeration*sin(3.14159*age);
+        float glint=exp(-8.*dot(bead+vec2(.30,.38),bead+vec2(.30,.38)));
+        vec3 pearl=light*.6+vec3(.38,.61,.65)*smoothstep(.48,1.,d)+vec3(.80,.88,.90)*glint;
+        light=mix(light,pearl,mask);
+       }
+      }
+     }
      gl_FragColor=vec4(light,opacity);
      #include <colorspace_fragment>
     }`});}
@@ -127,6 +167,17 @@ export class BoardRenderer extends CanvasBoard{
   const impact=this.motion?.to===index?pourState(phase).impact:0;
   const settling=this.settle?.index===index?Math.exp(-(now-this.settle.start)/500):0;
   const dropRipple=this.motion?.to===index?FINAL_DROPS.reduce((sum,d)=>{const age=(phase-d.impact)*this.motion.duration/1000;return sum+(age>=0&&age<.6?Math.sin(age*24)*Math.exp(-age*7)*d.gain:0);},0):0;
+  const elapsedSinceStop=this.settle?.index===index?(now-this.settle.start)/1000:0;
+  b.uniforms.aeration.value=this.reduced?0:Math.min(1,impact*1.4+Math.abs(dropRipple)*.32);
+  if(this.motion?.to===index){
+   b.uniforms.bubbleClock.value=Math.max(0,(phase-POUR.start-POUR.flight)*this.motion.duration/1000);
+   b.lastBubbleClock=b.uniforms.bubbleClock.value;
+   const sinceTail=(phase-FINAL_DROPS.at(-1).impact)*this.motion.duration/1000;
+   if(sinceTail>=0)b.uniforms.aeration.value=.30*Math.exp(-sinceTail*4.);
+  }else if(settling&&!this.reduced){
+   b.uniforms.bubbleClock.value=(b.lastBubbleClock||0)+elapsedSinceStop;
+   b.uniforms.aeration.value=.04*Math.exp(-elapsedSinceStop*5.);
+  }
   const wave=this.reduced?0:impact*1.9+settling*.9+dropRipple*1.5;
   const slope=prev.q*Math.min(1.8,w/55);
   let anchor=0;if(this.motion?.from===index&&phase>=POUR.start&&phase<=POUR.returnAt){const sign=this.motion.sign;const edge=rotate([sign*w*LIP,-h/2+5],0,0,a);anchor=waterOffset(edge[0],0,w*.35,now/1000,slope,wave);}
@@ -135,7 +186,7 @@ export class BoardRenderer extends CanvasBoard{
   const shapeKey=a+':'+layers.map(l=>l.amount).join(',');
   if(b.shapeKey!==shapeKey){const poly=interior(w,h).map(q=>rotate(q,0,0,a));let amount=0;b.localHeights=layers.map(l=>{amount+=l.amount;return surface(poly,amount*FILL/4);});b.shapeKey=shapeKey;}
   let total=0,heights=[];
-  for(let j=0;j<4;j++){const layer=layers[j];if(layer){total+=layer.amount;heights.push((this.h/2-y-b.localHeights[j])/COS+depth*CAMERA_SLOPE);b.uniforms.colors.value[j].set(COLORS[layer.color]);}else heights.push(heights.at(-1)??-10000);}
+  for(let j=0;j<4;j++){const layer=layers[j];if(layer){total+=layer.amount;heights.push(b.root.position.y-b.localHeights[j]);b.uniforms.colors.value[j].set(COLORS[layer.color]);}else heights.push(heights.at(-1)??-10000);}
   b.uniforms.heights.value.set(...heights);b.fluid.visible=total>.001;
   b.caps.forEach((cap,j)=>{cap.visible=visibility>.001&&!!layers[j]&&j===layers.length-1;if(!cap.visible)return;cap.position.set(x-this.w/2,heights[j],depth);});
   // Soft contact shadows and small status marks stay in the lightweight canvas.
@@ -147,18 +198,20 @@ export class BoardRenderer extends CanvasBoard{
  // Finish GPU/UI setup before starting the shared animation/audio clock.
  async preparePour(from,to,next){
   if(this.reduced||!this.active)return;
-  const routesReady=this.prepareRoutes(from,to,next);
-  const saved={motion:this.motion,lastPour:this.lastPour,renderFocus:this.renderFocus,waves:this.waves};
-  this.preparingPour=true;this.waves=[];const now=performance.now();
-  this.motion={from,to,sign:this.slots[to].x<this.w/2?-1:1,next,original:this.board.map(b=>[...b]),n:next[to].length-this.board[to].length,start:now,duration:POUR_TIMING.duration,resolve(){}};
-  this.draw(now);this.gl.getContext().finish();Object.assign(this,saved);this.preparingPour=false;this.snapshotDirty=false;
-  await Promise.all([routesReady,new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))]);
+  if(this.hasBakedRoutes())return this.prepareRoutes(from,to,next);
+  const start=performance.now();
+  // This vertical segment lies inside the clearance already reserved for selection.
+  this.pickup={from,to,height:now=>5+10*(1-Math.pow(1-Math.min(1,Math.max(0,now-start)/140),2))};
+  try{
+   await Promise.all([this.prepareRoutes(from,to,next),new Promise(resolve=>setTimeout(resolve,140))]);
+  }catch(error){this.pickup=null;this.snapshotDirty=true;throw error;}
+
  }
  draw(now){
-  if(this.snapshotReady&&!this.snapshotDirty&&!this.motion&&(!this.settle||now-this.settle.start>1400))return;
+  if(!this.pickup&&this.snapshotReady&&!this.snapshotDirty&&!this.motion&&(!this.settle||now-this.settle.start>1400))return;
   const cpuStart=performance.now(),m=this.motion;
   if(m&&!this.preparingPour&&!this.perfPour)this.perfPour={start:now,last:now,frames:0,cpu:0,worst:0,intervals:[],middle:[]};
-  if(m)this.lastPour=m;this.renderFocus=m||(this.settle&&now-this.settle.start<1400?this.lastPour:null);const focus=this.renderFocus;
+  if(m)this.lastPour=m;this.renderFocus=m||this.pickup||(this.settle&&now-this.settle.start<1400?this.lastPour:null);const focus=this.renderFocus;
   if(this.snapshot){this.snapshot.visible=!!focus&&this.snapshotReady;if(this.snapshot.visible){const phase=m?(now-m.start)/m.duration:1;this.snapshot.material.uniforms.alpha.value=1;for(const [key,i] of [['holeA',focus.from],['holeB',focus.to]]){const p=this.slots[i];this.snapshot.material.uniforms[key].value.set((p.x-p.w*.55)/this.w,1-(p.y+p.h/2+35)/this.h,(p.x+p.w*.55)/this.w,1-(p.y-p.h/2-35)/this.h);}}}
   super.draw(now);if(!this.gl)return;
   this.stream.visible=false;this.drops.forEach(d=>d.visible=false);
@@ -166,10 +219,10 @@ export class BoardRenderer extends CanvasBoard{
    if(t>POUR.start&&t<POUR.end+POUR.flight){
     const p=this.currentPoses?.[m.from],dest=this.currentPoses?.[m.to]||this.slots[m.to];
     if(p){const sign=m.sign;
-     const lip=rotate([sign*p.w*LIP,-p.h/2+5],p.x,p.y,p.a);
+     const lip=projectedLip(p,sign);
      const poly=interior(dest.w,dest.h).map(q=>rotate(q,dest.x,dest.y,0));
      const receiving=this.meshes[m.to];
-     const endY=surface(poly,(m.original[m.to].length+m.n*flow.received)*FILL/4)-waterOffset(0,0,dest.w*.35,now/1000,receiving?.uniforms.slope.value||0,receiving?.uniforms.wave.value||0)*COS;
+     const endY=dest.y+(surface(poly,(m.original[m.to].length+m.n*flow.received)*FILL/4)-dest.y)*COS-waterOffset(0,0,dest.w*.35,now/1000,receiving?.uniforms.slope.value||0,receiving?.uniforms.wave.value||0)*COS;
      this.stream.visible=true;this.stream.material.color.set(COLORS[m.original[m.from].at(-1)]);
      const pos=this.stream.geometry.attributes.position;
      // The front falls into the receiver; the tail follows it after the source stops.
@@ -194,8 +247,8 @@ export class BoardRenderer extends CanvasBoard{
   }
   if(m){const phase=(now-m.start)/m.duration,p=this.currentPoses?.[m.from],d=this.currentPoses?.[m.to];
    if(p&&d)FINAL_DROPS.forEach((drop,k)=>{const bead=dropShape(phase,drop);if(!bead)return;
-    const particle=this.drops[k+3],sign=m.sign,lip=rotate([sign*p.w*LIP,-p.h/2+5],p.x,p.y,p.a);
-    const poly=interior(d.w,d.h).map(q=>rotate(q,d.x,d.y,0)),endY=surface(poly,m.next[m.to].length*FILL/4),fall=bead.fall,z=(this.meshes[m.from]?.depth||0)*(1-fall);
+    const particle=this.drops[k+3],sign=m.sign,lip=projectedLip(p,sign);
+    const poly=interior(d.w,d.h).map(q=>rotate(q,d.x,d.y,0)),endY=d.y+(surface(poly,m.next[m.to].length*FILL/4)-d.y)*COS,fall=bead.fall,z=(this.meshes[m.from]?.depth||0)*(1-fall);
     particle.visible=true;const size=(1.25+drop.gain*.95)*bead.scale,radial=size/Math.sqrt(bead.stretch);particle.scale.set(radial,size*bead.stretch,radial);particle.position.set(lip[0]+(d.x-lip[0])*fall-this.w/2,(this.h/2-(lip[1]+(endY-lip[1])*fall))/COS+z*CAMERA_SLOPE,z);
    });
   }
@@ -206,7 +259,7 @@ export class BoardRenderer extends CanvasBoard{
    const warmTarget=new T.WebGLRenderTarget(1,1);this.gl.compile(this.scene3,this.camera);this.gl.setRenderTarget(warmTarget);this.gl.render(this.scene3,this.camera);this.gl.setRenderTarget(null);this.gl.getContext().finish();warmTarget.dispose();visibility.forEach(([o,v])=>o.visible=v);this.warmed=true;
   }
   this.gl.render(this.scene3,this.camera);
-  if(!m&&this.snapshotDirty&&this.snapshotTexture){this.gl.copyFramebufferToTexture(this.snapshotTexture);this.snapshotReady=true;this.snapshotDirty=false;}
+  if(!this.pickup&&!m&&this.snapshotDirty&&this.snapshotTexture){this.gl.copyFramebufferToTexture(this.snapshotTexture);this.snapshotReady=true;this.snapshotDirty=false;}
   // Exercise real framebuffer pipelines before the first interaction.
   // All preparation and restoration finish in this task, before presentation.
   if(!this.preparedPour&&!this.preparingPour&&this.board.length>1&&this.snapshotReady){
@@ -223,5 +276,5 @@ export class BoardRenderer extends CanvasBoard{
   }
   if(this.perfPour){const p=this.perfPour;if(p.frames){p.intervals.push(now-p.last);if(m&&(now-m.start)/m.duration>.2&&(now-m.start)/m.duration<.85)p.middle.push(now-p.last);}p.frames++;p.cpu+=performance.now()-cpuStart;p.worst=Math.max(p.worst,now-p.last);p.last=now;if(!this.motion){console.info('AURORA_PERF '+JSON.stringify({fps:Math.round((p.frames-1)*1000/(now-p.start)),cpuMs:+(p.cpu/p.frames).toFixed(2),worstFrameMs:Math.round(p.worst),p95:p.intervals.slice().sort((a,b)=>a-b)[Math.floor(p.intervals.length*.95)],middleFPS:Math.round(p.middle.length*1000/p.middle.reduce((a,b)=>a+b,0)),bottles:this.board.length,triangles:this.gl.info.render.triangles}));this.perfPour=null;}}
  }
- destroy(){this.waterStudy?.dispose();this.snapshotTexture?.dispose();this.snapshot?.geometry.dispose();this.snapshot?.material.dispose();super.destroy();this.clearMeshes();this.envTarget?.dispose();this.ripples?.forEach(r=>{r.geometry.dispose();r.material.dispose();});this.stream?.geometry.dispose();this.stream?.material.dispose();this.drops?.forEach(d=>d.geometry.dispose());if(this.gl){this.gl.dispose();this.gl.forceContextLoss();this.gl.domElement.remove();}}
+ destroy(){this.glassStudy?.dispose();this.waterStudy?.dispose();this.snapshotTexture?.dispose();this.snapshot?.geometry.dispose();this.snapshot?.material.dispose();super.destroy();this.clearMeshes();this.envTarget?.dispose();this.ripples?.forEach(r=>{r.geometry.dispose();r.material.dispose();});this.stream?.geometry.dispose();this.stream?.material.dispose();this.drops?.forEach(d=>d.geometry.dispose());if(this.gl){this.gl.dispose();this.gl.forceContextLoss();this.gl.domElement.remove();}}
 }

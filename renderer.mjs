@@ -1,8 +1,10 @@
+import mobileRoutes from './mobile-routes.mjs';
+import {compileRoute} from './pour-route.mjs';
 import {pourGap} from './pour-layout.mjs';
 import {sampleRoute} from './pour-route.mjs';
 import {fitPair,fitVessel,boardLayout} from './pour-layout.mjs';
 import {pourState,POUR} from './pour-motion.mjs?v=3';
-import {legalTargets,completeBottle} from './core.mjs';
+import {pour,legalTargets,completeBottle} from './core.mjs';
 import {drawGlass} from './glass.mjs?v=3';
 import {POUR_TIMING} from './water-foley.mjs';
 export const COLORS=['#fa3979','#00c8df','#ffc927','#9959eb','#61d76b','#ff842f'];
@@ -14,24 +16,60 @@ export class BoardRenderer{
  destroy(){this.routeWorker.terminate();for(const p of this.routeRequests.values())p.resolve(null);this.routeRequests.clear();this.active=false;cancelAnimationFrame(this.frame);this.ro.disconnect();if(this.motion){this.motion.resolve();this.motion=null;}}
  resize(){const rect=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);this.w=rect.width||400;this.h=rect.height||380;this.canvas.width=this.w*dpr;this.canvas.height=this.h*dpr;this.ctx.setTransform(dpr,0,0,dpr,0,0);this.layout();}
  layout(){const n=this.board.length,cols=n<=4?2:n<=6?3:4,rows=Math.ceil(n/cols);this.slots=boardLayout(this.w,this.h,n);this.bh=this.slots[0]?.h||0;this.bw=this.slots[0]?.w||0;this.targets.innerHTML=this.slots.map((p,i)=>`<button data-i="${i}" aria-label="Колба ${i+1}" style="left:${p.x-p.w*.525}px;top:${p.y-p.h/2-10}px;width:${p.w*1.05}px;height:${Math.max(44,Math.min(p.h+28,rows>1?(this.h-85)/rows-4:p.h+28))}px"></button>`).join('');this.targets.querySelectorAll('button').forEach(b=>b.onclick=()=>this.onSelect(+b.dataset.i));}
- update(board,selected=-1,hint=[]){this.board=board.map(x=>[...x]);this.possible=selected>=0?legalTargets(board,selected):[];this.selected=selected;this.hint=hint;if(this.slots?.length!==board.length)this.layout();this.targets.querySelectorAll('button').forEach((b,i)=>{b.setAttribute('aria-label',`Колба ${i+1}, ${board[i].length} слоя`);b.setAttribute('aria-pressed',String(i===selected));b.classList.toggle('can-pour',this.possible.includes(i));b.setAttribute('aria-label',`Колба ${i+1}, ${board[i].length} слоя${completeBottle(board[i])?', собрана':this.possible.includes(i)?', можно перелить сюда':''}`);});}
+ update(board,selected=-1,hint=[]){this.board=board.map(x=>[...x]);this.possible=selected>=0?legalTargets(board,selected):[];this.selected=selected;this.hint=hint;if(this.slots?.length!==board.length)this.layout();this.warmRoutes(selected);this.targets.querySelectorAll('button').forEach((b,i)=>{b.setAttribute('aria-label',`Колба ${i+1}, ${board[i].length} слоя`);b.setAttribute('aria-pressed',String(i===selected));b.classList.toggle('can-pour',this.possible.includes(i));b.setAttribute('aria-label',`Колба ${i+1}, ${board[i].length} слоя${completeBottle(board[i])?', собрана':this.possible.includes(i)?', можно перелить сюда':''}`);});}
+ warmRoutes(selected){
+  const epoch=this.warmEpoch=(this.warmEpoch||0)+1;
+  if(this.hasBakedRoutes()||this.reduced||(this.board.length>4&&this.board.length<7))return;
+  const board=this.board;
+  const sources=selected>=0?[selected]:board.map((_,i)=>i);
+  // Only one speculative request at a time, so a real tap can take priority.
+  const warm=async()=>{
+   for(const from of sources)for(const to of legalTargets(board,from)){
+    if(!this.active||this.warmEpoch!==epoch||this.pickup||this.motion)return;
+    await this.requestRoute(from,to,pour(board,from,to));
+   }
+  };
+  queueMicrotask(()=>warm().catch(()=>{}));
+ }
+ hasBakedRoutes(){return this.w===360&&this.h===674&&[8,9].includes(this.slots.length);}
+ requestRoute(from,to,next){
+  const before=this.board[from].length, after=next[from].length;
+  const key=[this.w,this.h,this.slots.length,from,to,before,after].join('/');
+  this.routeCache??=new Map();
+  if(this.routeCache.has(key))return this.routeCache.get(key);
+  if(this.hasBakedRoutes()){
+   const points=(units,lift)=>mobileRoutes[[this.slots.length,from,to,units,lift]].map(([x,y,a])=>({...this.slots[from],x,y,a}));
+   const routes={from,to,approach:compileRoute(points(before,5)),returning:compileRoute(points(after,0))};
+   return Promise.resolve(routes);
+  }
+  const id=++this.routeId;
+  const pending=new Promise((resolve,reject)=>{
+   this.routeRequests.set(id,{resolve,reject});
+   this.routeWorker.postMessage({id,slots:this.slots,from,to,before,after,width:this.w,height:this.h});
+  });
+  if(this.routeCache.size>=128)this.routeCache.delete(this.routeCache.keys().next().value);
+  this.routeCache.set(key,pending);
+  pending.catch(()=>this.routeCache.delete(key));
+  return pending;
+ }
  async prepareRoutes(from,to,next){
   this.preparedRoutes=null;
   if(this.board.length>4&&this.board.length<7)return;
-  const id=++this.routeId;
-  const routes=await new Promise((resolve,reject)=>{this.routeRequests.set(id,{resolve,reject});this.routeWorker.postMessage({id,slots:this.slots,from,to,before:this.board[from].length,after:next[from].length,width:this.w,height:this.h});});
+  const routes=await this.requestRoute(from,to,next);
   if(this.active){if(!routes?.approach||!routes?.returning)throw new Error("No collision-free pouring route");this.preparedRoutes=routes;}
  }
- animatePour(from,to,next,reduced,startedAt=performance.now()){if(reduced){this.update(next);return Promise.resolve();}return new Promise(resolve=>{this.motion={routes:this.preparedRoutes?.from===from&&this.preparedRoutes?.to===to?this.preparedRoutes:null,from,to,sign:this.slots[to].x<this.w/2?-1:1,next,original:this.board.map(x=>[...x]),n:next[to].length-this.board[to].length,start:startedAt,duration:POUR_TIMING.duration,resolve};});}
+ animatePour(from,to,next,reduced,startedAt=performance.now()){this.pickup=null;if(reduced){this.update(next);return Promise.resolve();}return new Promise(resolve=>{this.motion={routes:this.preparedRoutes?.from===from&&this.preparedRoutes?.to===to?this.preparedRoutes:null,from,to,sign:this.slots[to].x<this.w/2?-1:1,next,original:this.board.map(x=>[...x]),n:next[to].length-this.board[to].length,start:startedAt,duration:POUR_TIMING.duration,resolve};});}
  loop(now){if(!this.active)return;this.draw(now);this.frame=requestAnimationFrame(this.loop);}
  draw(now){const c=this.ctx;
  // WebGL draws the pouring pair; its empty annotation layer only needs clearing once.
  if(!this.renderStream3d||!this.motion||this.overlayMotion!==this.motion)c.clearRect(0,0,this.w,this.h);
  this.overlayMotion=this.motion;if(!this.slots)return;
- const m=this.motion,t=m?Math.min(1,(now-m.start)/m.duration):0;
+ const m=this.motion, elapsed=m?(now-m.start)/m.duration:0;
+ // Give the hand-off and return their own settling time after the last drop.
+ const t=elapsed<=POUR.returnAt?elapsed:Math.min(1,POUR.returnAt+(elapsed-POUR.returnAt)*.48);
  const flowState=pourState(t),transfer=m?flowState.emitted:0,received=m?flowState.received:0;
  const source=m?this.slots[m.from]:null,dest=m?{...this.slots[m.to]}:null;
- const poses=this.slots.map((p,i)=>({...p,a:0,y:p.y-(i===this.selected?15:0)}));
+ const poses=this.slots.map((p,i)=>({...p,a:0,y:p.y-(i===this.pickup?.from?this.pickup.height(now):i===this.selected?5:0)}));
  if(m){const s=source,d=dest,sign=m.sign;
   // The downward rim must meet the free surface at the remaining volume.
   const angle=sign*tilt(s.w,s.h,m.original[m.from].length-m.n*transfer);
