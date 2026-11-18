@@ -1,4 +1,4 @@
-import {mountMenuMotion} from './menu-motion.mjs?v=27';
+import {mountMenuMotion} from './menu-motion.mjs?v=28';
 import {GlassStudy} from './glass-study.mjs?v=1';
 import {snapshotRun,sanitizeRuns} from './session.mjs';
 import {liquidSound,interfaceSound,prepareAudio,prepareLiquidSound,stopSounds} from './audio.mjs?v=5';
