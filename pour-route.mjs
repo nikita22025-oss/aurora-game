@@ -16,7 +16,8 @@ function arcBetween(start, goal, obstacles, width, height) {
   const t=step/16;
   const pose=lerp(start,goal,t);
   pose.y-=Math.sin(Math.PI*t)*Math.min(22,start.h*.13);
-  pose.a=start.a+(goal.a-start.a)*t*t*(3-2*t);
+  const roll=t*t*t*(10+t*(6*t-15));
+  pose.a=start.a+(goal.a-start.a)*roll;
   if (!clearLine(arc.at(-1),pose,obstacles,width,height)) return [start,goal];
   arc.push(pose);
  }

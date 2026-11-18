@@ -94,7 +94,11 @@ export class BoardRenderer extends CanvasBoard{
      light+=heel*(color*.40+vec3(.035,.085,.10));
      if(capIndex>=0){
       float meniscus=smoothstep(.82,1.,length(local.xz)/radius);
-      light=color*(.46+.24*n.y)+vec3(.13,.24,.25)*meniscus;
+      // Travelling highlights follow the actual slope of the disturbed surface.
+      vec3 waterNormal=normalize(litNormal);
+      float crest=clamp((waterNormal.x*.8+waterNormal.z-.23)*2.8,0.,1.);
+      float impactLight=crest*min(1.,abs(wave)*.8);
+      light=color*(.46+.24*n.y)+vec3(.13,.24,.25)*meniscus+vec3(.16,.26,.28)*impactLight;
       light+=vec3(.34,.39,.39)*exp(-pow((across+.50)/.20,2.))*.7;
      }
      gl_FragColor=vec4(light,opacity);
@@ -174,12 +178,13 @@ export class BoardRenderer extends CanvasBoard{
      for(let j=0;j<=32;j++){
       const v=tail+(front-tail)*j/32,section=jetSection(t,v);
       const lateral = sign * Math.min(6, (endY-lip[1])*.085);
-      const bow = lateral * v * (1-v) * 4;
+      const travel = Math.sqrt(v);
+      const bow = lateral * travel * (1-travel) * 4;
       const xx=lip[0]+(dest.x-lip[0])*v+bow;
       const yy=lip[1]+(endY-lip[1])*v,zz=(this.meshes[m.from]?.depth||0)*(1-v);
       const r=(Math.min(p.w,dest.w)*.056+Math.min(m.n,3)*.16)*section.radius*(1+.012*Math.sin(v*14-now*.009));
       // Circular cross sections perpendicular to the jet tangent avoid flat ribbons.
-      const dx=dest.x-lip[0]+4*lateral*(1-2*v),dy=(endY-lip[1])/COS,len=Math.hypot(dx,dy)||1;
+      const dx=dest.x-lip[0]+lateral*(2/Math.max(.08,travel)-4),dy=(endY-lip[1])/COS,len=Math.hypot(dx,dy)||1;
       for(let k=0;k<10;k++){const a=k*Math.PI/5,offset=Math.cos(a)*r;pos.setXYZ(j*10+k,xx-this.w/2+offset*dy/len,(this.h/2-yy)/COS+offset*dx/len+zz*CAMERA_SLOPE,zz+Math.sin(a)*r);}
      }
      pos.needsUpdate=true;this.stream.geometry.computeVertexNormals();
