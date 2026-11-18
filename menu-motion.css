@@ -36,3 +36,10 @@
 
 .home-art{background-image:url('assets/menu-unified-v2.png')}
 .menu-fish img{width:100%;height:100%;object-fit:contain;display:block}.fish-c{display:none}.fish-b{opacity:.85}
+
+/* Opt-in Vector motion trial; decoded video is detached before gameplay. */
+.vector-menu .home-art{background:#092a36}
+.vector-robot-video{position:absolute;width:100%;height:100%;object-fit:contain;object-position:center 40%}
+.vector-menu .home-title{top:54px}
+.vector-menu .home-vignette{background:linear-gradient(#092a3680,transparent 30%,transparent 61%,#092a36e8 83%,#092a36 100%)}
+.vector-menu .ocean-shimmer{display:none}

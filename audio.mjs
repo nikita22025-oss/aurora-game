@@ -1,6 +1,6 @@
 import {WATER_START,WATER_END,waterEnvelope,DROP_EVENTS,DROP_PEAK_SECONDS} from './pour-audio.mjs?v=3';
 let context,master,waterBuffer,tailBuffer,preparing,audioEpoch=0;
-const waterFile=fetch(new URL('./assets/water-stream-soft-v3.wav',import.meta.url)).then(r=>{if(!r.ok)throw Error('Water audio unavailable');return r.arrayBuffer();}).catch(()=>null);
+const waterFile=fetch(new URL('./assets/vector-stream.wav',import.meta.url)).then(r=>{if(!r.ok)throw Error('Water audio unavailable');return r.arrayBuffer();}).catch(()=>null);
 const tailFile=fetch(new URL('./assets/water-drop-soft-v3.wav',import.meta.url)).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);
 function decodedWater(c){
  preparing??=Promise.all([waterFile,tailFile].map(f=>f.then(data=>data?c.decodeAudioData(data.slice(0)):null).catch(()=>null))).then(([water,tail])=>{waterBuffer=water;tailBuffer=tail;return water;});

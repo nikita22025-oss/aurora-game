@@ -22,7 +22,7 @@ export class BoardRenderer extends CanvasBoard{
   this.scene3.add(new T.HemisphereLight('#d9f5ff','#314654',1.35));const key=new T.DirectionalLight('#fff1ce',3.0);key.position.set(-250,400,600);this.scene3.add(key);const rim=new T.DirectionalLight('#a4e6ff',1.7);rim.position.set(300,80,-100);this.scene3.add(rim);
   this.renderStream3d=true;
   const positions=new Float32Array(33*10*3),indices=[];for(let j=0;j<32;j++)for(let k=0;k<10;k++){const a=j*10+k,b=j*10+(k+1)%10;indices.push(a,b,a+10,b,b+10,a+10);}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();geo.attributes.position.setUsage(T.DynamicDrawUsage);geo.attributes.normal.setUsage(T.DynamicDrawUsage);
-  this.stream=new T.Mesh(geo,new T.MeshPhysicalMaterial({color:'#62cddd',roughness:.055,metalness:0,transmission:0,thickness:2,ior:1.333,clearcoat:1,envMapIntensity:.6,toneMapped:false,emissive:'#ffffff',emissiveIntensity:.08}));this.stream.frustumCulled=false;this.scene3.add(this.stream);
+  this.stream=new T.Mesh(geo,new T.MeshPhysicalMaterial({color:'#62cddd',roughness:.035,metalness:0,transmission:0,thickness:2,ior:1.333,clearcoat:1,envMapIntensity:1.15,toneMapped:false,transparent:true,opacity:.88,emissive:'#ffffff',emissiveIntensity:.025}));this.stream.frustumCulled=false;this.scene3.add(this.stream);
   this.drops=[];for(let i=0;i<6;i++){const d=new T.Mesh(new T.SphereGeometry(1,10,8),this.stream.material);this.scene3.add(d);this.drops.push(d);}
   this.ripples=Array.from({length:3},()=>{const ring=new T.Mesh(new T.TorusGeometry(1,.035,6,48),new T.MeshBasicMaterial({color:'#d5f8ec',transparent:true,opacity:0,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.visible=false;this.scene3.add(ring);return ring;});
   this.snapshot=new T.Mesh(new T.PlaneGeometry(2,2),new T.RawShaderMaterial({transparent:true,depthTest:false,depthWrite:false,uniforms:{picture:{value:null},alpha:{value:1},holeA:{value:new T.Vector4()},holeB:{value:new T.Vector4()}},vertexShader:`precision highp float;attribute vec3 position;varying vec2 uvScreen;void main(){uvScreen=position.xy*.5+.5;gl_Position=vec4(position.xy,.99,1.);}`,fragmentShader:`precision highp float;varying vec2 uvScreen;uniform sampler2D picture;uniform float alpha;uniform vec4 holeA,holeB;bool inside(vec4 r){return uvScreen.x>r.x&&uvScreen.x<r.z&&uvScreen.y>r.y&&uvScreen.y<r.w;}void main(){if(inside(holeA)||inside(holeB))discard;gl_FragColor=vec4(texture2D(picture,uvScreen).rgb,alpha);}`}));
@@ -37,17 +37,17 @@ export class BoardRenderer extends CanvasBoard{
   const profile=(radius,base,ceiling)=>{const p=[];for(let k=0;k<=16;k++){const a=k*Math.PI/32;p.push(new T.Vector2(Math.sin(a)*radius,base+radius*(1-Math.cos(a))));}p.push(new T.Vector2(radius,ceiling));return p;};
   const outside=profile(outer,bottom,top);const inside=profile(r,innerBottom,top);const closed=[...outside,new T.Vector2(r,top),...inside.slice().reverse()];
   const root=new T.Group();this.scene3.add(root);
-  const shell=new T.Mesh(new T.LatheGeometry(outside,48),new T.MeshPhysicalMaterial({color:'#f0fcff',metalness:0,roughness:.16,transmission:0,thickness:2.0,ior:1.46,envMapIntensity:.8,clearcoat:.65,clearcoatRoughness:.3,side:T.DoubleSide,transparent:true,opacity:.30,depthWrite:false}));shell.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\ngl_FragColor.a *= .32 + .68 * pow(1.0-abs(dot(normal,normalize(vViewPosition))),2.0);');};root.add(shell);shell.renderOrder=4;
-  const lip=new T.Mesh(new T.TorusGeometry(outer,2.7,12,64),new T.MeshStandardMaterial({color:'#caf4e8',roughness:.19,metalness:.15,emissive:'#8ab5a7',emissiveIntensity:.15}));lip.rotation.x=Math.PI/2;lip.position.y=top;root.add(lip);
-  const collar=new T.Mesh(new T.TorusGeometry(outer-.2,1.15,8,64),new T.MeshBasicMaterial({color:'#6ccfdd',transparent:true,opacity:.65,depthWrite:false}));collar.rotation.x=Math.PI/2;collar.position.y=top-5;root.add(collar);
-  const bottomGlow=new T.Mesh(new T.TorusGeometry(outer*.68,1.0,8,48),new T.MeshBasicMaterial({color:'#b8fff0',transparent:true,opacity:.36,depthWrite:false}));bottomGlow.rotation.x=Math.PI/2;bottomGlow.position.y=bottom+outer*.26;root.add(bottomGlow);
+  const shell=new T.Mesh(new T.LatheGeometry(outside,48),new T.MeshPhysicalMaterial({color:'#fffaf2',metalness:0,roughness:.075,transmission:0,thickness:2.0,ior:1.46,envMapIntensity:1.1,clearcoat:1,clearcoatRoughness:.08,side:T.DoubleSide,transparent:true,opacity:.095,depthWrite:false}));shell.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\ngl_FragColor.a *= .32 + .68 * pow(1.0-abs(dot(normal,normalize(vViewPosition))),2.0);');};root.add(shell);shell.renderOrder=4;
+  const lip=new T.Mesh(new T.TorusGeometry(outer,.85,12,64),new T.MeshStandardMaterial({color:'#f7ead6',roughness:.10,metalness:.08,envMapIntensity:1.3}));lip.rotation.x=Math.PI/2;lip.position.y=top;root.add(lip);
+  const collar=new T.Mesh(new T.TorusGeometry(outer-.45,.38,8,64),new T.MeshBasicMaterial({color:'#fff4df',transparent:true,opacity:.45,depthWrite:false}));collar.rotation.x=Math.PI/2;collar.position.y=top-1.8;root.add(collar);
+  const bottomGlow=new T.Mesh(new T.TorusGeometry(outer*.65,.65,8,48),new T.MeshBasicMaterial({color:'#e7faff',transparent:true,opacity:.48,depthWrite:false}));bottomGlow.rotation.x=Math.PI/2;bottomGlow.position.y=bottom+outer*.18;root.add(bottomGlow);
   // Pale silhouette makes the transparent wall readable against the dark bench.
-  const edgeMaterial=new T.MeshBasicMaterial({color:'#c4e7dc',transparent:true,opacity:.65,depthWrite:false});
+  const edgeMaterial=new T.MeshBasicMaterial({color:'#e9f6fa',transparent:true,opacity:.46,depthWrite:false});
   const contour=[];contour.push(new T.Vector3(-outer,top,0),new T.Vector3(-outer,bottom+outer,0));for(let k=1;k<=32;k++){const a=Math.PI+k*Math.PI/32;contour.push(new T.Vector3(Math.cos(a)*outer,bottom+outer+Math.sin(a)*outer,0));}contour.push(new T.Vector3(outer,top,0));
-  const outlinePath=new T.CurvePath();for(let j=1;j<contour.length;j++)outlinePath.add(new T.LineCurve3(contour[j-1],contour[j]));const outline=new T.Mesh(new T.TubeGeometry(outlinePath,160,1.25,8,false),edgeMaterial);root.add(outline);
+  const outlinePath=new T.CurvePath();for(let j=1;j<contour.length;j++)outlinePath.add(new T.LineCurve3(contour[j-1],contour[j]));const outline=new T.Mesh(new T.TubeGeometry(outlinePath,160,.43,8,false),edgeMaterial);root.add(outline);
   // Rounded soft light strips are geometry, so they follow the tilting glass.
-  for(const [side,width,length,opacity] of [[-1,w*.027,h*.48,.64],[1,w*.012,h*.30,.30]]){
-   const highlight=new T.Mesh(new T.CapsuleGeometry(width,length,8,12),new T.MeshBasicMaterial({color:'#f0fff4',transparent:true,opacity,depthWrite:false}));
+  for(const [side,width,length,opacity] of [[-1,w*.011,h*.72,.58],[1,w*.006,h*.60,.31]]){
+   const highlight=new T.Mesh(new T.CapsuleGeometry(width,length,8,12),new T.MeshBasicMaterial({color:'#fff9ed',transparent:true,opacity,depthWrite:false}));
    highlight.position.set(side*outer*.64,top-h*.34,outer*.78);highlight.renderOrder=5;root.add(highlight);
   }
   const uniforms={heights:{value:new T.Vector4(-1000,-1000,-1000,-1000)},colors:{value:COLORS.slice(0,4).map(c=>new T.Color(c))},time:{value:0},wave:{value:0},slope:{value:0},anchor:{value:0},center:{value:new T.Vector2()},radius:{value:r},capSpan:{value:1},inverse:{value:new T.Matrix4()},bottom:{value:innerBottom},top:{value:top},vesselHeight:{value:h},neckRadius:{value:w*LIP}};
@@ -66,8 +66,14 @@ export class BoardRenderer extends CanvasBoard{
      if(capIndex<0){if(yy>heights.w)discard;band=0;if(yy>heights.x)band=1;if(yy>heights.y)band=2;if(yy>heights.z)band=3;}
      else{if(local.y<bottom||local.y>top)discard;float rr=radius;if(local.y<bottom+radius){float dy=local.y-bottom-radius;rr=sqrt(max(0.,radius*radius-dy*dy));}if(length(local.xz)>rr)discard;}
      vec3 color=colors[band];float across=clamp(local.x/radius,-1.,1.);float roundness=sqrt(max(0.,1.-across*across));float strip=exp(-pow((across+.48)/.23,2.));
-     vec3 light=color*(.58+.42*roundness)+vec3(.10,.15,.14)*strip;
-     if(capIndex>=0){vec3 n=normalize(litNormal)*(gl_FrontFacing?1.:-1.);float glint=pow(max(0.,dot(n,normalize(vec3(-.35,.4,1.)))),18.);light=color*.94+vec3(.10,.13,.12)*glint;}
+     // Cylindrical optical depth: clear edges, saturated body, narrow studio reflections.
+     float edge=pow(1.-roundness,2.);
+     float key=exp(-pow((across+.62)/.075,2.));
+     float rim=exp(-pow((across-.82)/.055,2.));
+     vec3 light=color*(.20+.62*roundness)+color*color*.08;
+     light+=vec3(.035,.065,.075)*strip+vec3(.42,.47,.49)*key+vec3(.13,.22,.24)*rim;
+     light=mix(light,vec3(.21,.38,.42)+color*.36,edge*.45);
+     if(capIndex>=0){vec3 n=normalize(litNormal)*(gl_FrontFacing?1.:-1.);float glint=pow(max(0.,dot(n,normalize(vec3(-.35,.4,1.)))),32.);float meniscus=smoothstep(.86,1.,length(local.xz)/radius);light=color*.66+vec3(.25,.35,.36)*glint+vec3(.09,.20,.22)*meniscus;}
      gl_FragColor=vec4(light,opacity);
      #include <colorspace_fragment>
     }`});}
@@ -106,7 +112,7 @@ export class BoardRenderer extends CanvasBoard{
   b.uniforms.heights.value.set(...heights);b.fluid.visible=total>.001;
   b.caps.forEach((cap,j)=>{cap.visible=visibility>.001&&!!layers[j]&&j===layers.length-1;if(!cap.visible)return;cap.position.set(x-this.w/2,heights[j],depth);});
   // Soft contact shadows and small status marks stay in the lightweight canvas.
-  const selected=index===this.selected||(!this.motion&&this.hint[0]===index),available=!this.motion&&(this.possible.includes(index)||this.hint[1]===index);b.lip.material.color.set(selected?'#ffe58a':available?'#b8ffb1':'#caf4e8');b.shell.material.emissive.set(selected?'#695026':available?'#225363':'#000000');b.shell.material.emissiveIntensity=.22;
+  const selected=index===this.selected||(!this.motion&&this.hint[0]===index),available=!this.motion&&(this.possible.includes(index)||this.hint[1]===index);b.lip.material.color.set(selected?'#ffe58a':available?'#b8ffb1':'#f7ead6');b.shell.material.emissive.set(selected?'#695026':available?'#225363':'#000000');b.shell.material.emissiveIntensity=.22;
   if(this.motion)return; // No annotation pixels change during a WebGL pour.
   c.textAlign='center';c.font='800 11px AuroraLab, sans-serif';c.fillStyle=selected?'#b7e354':'#b9d4cb';if(!this.motion&&this.hint.length)c.fillText(String(index+1).padStart(2,'0'),this.slots[index].x,this.slots[index].y+h/2+23);
   if(available||(!this.motion&&completeBottle(this.board[index]))){c.font='17px sans-serif';c.fillStyle='#e2c992';c.fillText(available?'↓':'✓',x+w*.42,y-h/2+12);}
@@ -144,12 +150,13 @@ export class BoardRenderer extends CanvasBoard{
      const tail=Math.min(1,Math.max(0,(t-POUR.end)/POUR.flight)**2);
      for(let j=0;j<=32;j++){
       const v=tail+(front-tail)*j/32,section=jetSection(t,v);
-      const bow=sign*Math.sin(v*Math.PI)*1.2;
+      const lateral = sign * Math.min(6, (endY-lip[1])*.085);
+      const bow = lateral * v * (1-v) * 4;
       const xx=lip[0]+(dest.x-lip[0])*v+bow;
       const yy=lip[1]+(endY-lip[1])*v,zz=(this.meshes[m.from]?.depth||0)*(1-v);
-      const r=(3.1+Math.min(m.n,3)*.35)*section.radius*(1+.035*Math.sin(v*23-now*.020));
+      const r=(Math.min(p.w,dest.w)*.043+Math.min(m.n,3)*.16)*section.radius*(1+.012*Math.sin(v*14-now*.009));
       // Circular cross sections perpendicular to the jet tangent avoid flat ribbons.
-      const dx=dest.x-lip[0]+sign*Math.PI*Math.cos(v*Math.PI)*1.2,dy=(endY-lip[1])/COS,len=Math.hypot(dx,dy)||1;
+      const dx=dest.x-lip[0]+4*lateral*(1-2*v),dy=(endY-lip[1])/COS,len=Math.hypot(dx,dy)||1;
       for(let k=0;k<10;k++){const a=k*Math.PI/5,offset=Math.cos(a)*r;pos.setXYZ(j*10+k,xx-this.w/2+offset*dy/len,(this.h/2-yy)/COS+offset*dx/len+zz*CAMERA_SLOPE,zz+Math.sin(a)*r);}
      }
      pos.needsUpdate=true;this.stream.geometry.computeVertexNormals();

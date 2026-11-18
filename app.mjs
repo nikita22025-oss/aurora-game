@@ -1,10 +1,10 @@
 import {mountMenuMotion} from './menu-motion.mjs';
 import {GlassStudy} from './glass-study.mjs?v=1';
 import {snapshotRun,sanitizeRuns} from './session.mjs';
-import {liquidSound,interfaceSound,prepareAudio,prepareLiquidSound,stopSounds} from './audio.mjs?v=4';
+import {liquidSound,interfaceSound,prepareAudio,prepareLiquidSound,stopSounds} from './audio.mjs?v=5';
 import {copy,pour,won,solve,legalTargets,completeBottle} from './core.mjs';
 import {levels,upgrades,reward,buy} from './levels.mjs';
-import {BoardRenderer} from './renderer3d.mjs?v=21';
+import {BoardRenderer} from './renderer3d.mjs?v=23';
 const app=document.querySelector('#app');
 let laboratory=null,labLoading=false;
 async function mountLocalLab(){

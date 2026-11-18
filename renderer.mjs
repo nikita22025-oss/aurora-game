@@ -5,7 +5,7 @@ import {pourState,POUR} from './pour-motion.mjs?v=3';
 import {legalTargets,completeBottle} from './core.mjs';
 import {drawGlass} from './glass.mjs?v=3';
 import {POUR_TIMING} from './water-foley.mjs';
-export const COLORS=['#ff688a','#34cbd2','#ffd35b','#aa7af0','#8bdb89','#ff9654'];
+export const COLORS=['#fa3979','#00c8df','#ffc927','#9959eb','#61d76b','#ff842f'];
 const mix=(a,b,t)=>a+(b-a)*t,ease=t=>t*t*(3-2*t);
 import {FILL,LIP,rotate,surface,interior,tilt} from './fluid.mjs?v=4';
 function path(ctx,poly){ctx.beginPath();poly.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();}

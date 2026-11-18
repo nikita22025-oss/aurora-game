@@ -6,7 +6,7 @@ export function fitVessel(p,width,height,margin=8){const shift=fitPair(p,p,width
 // Leave a dedicated headroom strip and gaps for lifting and turning a vessel.
 export function boardLayout(width,height,n){
  const cols=n<=4?2:3,rows=Math.ceil(n/cols),head=Math.min(n>=7?108:88,height*.18),pitch=(height-head-26)/rows;
- const h=n>=7?Math.min(100,width*.31,pitch*.58):Math.min(170,width*.47,pitch*.70,(width-32)*.59),w=n>=7?Math.min(42.5,width*.125):Math.min(96,h*.50,(width-32)/cols*.80),gap=cols===2?width*.66:n>=7?width*.36:(width-28)/cols;
+ const h=n>=7?Math.min(100,width*.31,pitch*.58):Math.min(210,width*.57,pitch*.70,(width-32)*.59),w=n>=7?Math.min(36,h*.30,width*.105):Math.min(64,h*.30,(width-32)/cols*.80),gap=cols===2?width*.66:n>=7?width*.36:(width-28)/cols;
  return Array.from({length:n},(_,i)=>{const row=Math.floor(i/cols),count=Math.min(cols,n-row*cols);return {x:width/2+(i%cols-(count-1)/2)*gap,y:head+h/2+row*pitch,w,h};});
 }
 

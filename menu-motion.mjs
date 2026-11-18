@@ -1,6 +1,15 @@
 // Decorative menu only. All work is disposed before the gameplay renderer starts.
 export function mountMenuMotion(host,{reduced=false,paused=false}={}){
  const art=host.querySelector('.home-art');
+ if(new URLSearchParams(location.search).get('robot')==='vector'){
+  host.classList.add('vector-menu');
+  art.innerHTML='<video class="vector-robot-video" muted playsinline loop preload="metadata" aria-label="Робот Аврора переливает воду в колбу"><source src="assets/robot-vector-pour-v1.mp4" type="video/mp4"></video>';
+  const video=art.querySelector('video');video.muted=true;
+  function visibility(){if(document.hidden||paused||reduced)video.pause();else video.play().catch(()=>{});}
+  visibility();document.addEventListener('visibilitychange',visibility);
+  return ()=>{document.removeEventListener('visibilitychange',visibility);video.pause();video.removeAttribute('src');video.replaceChildren();video.load();};
+ }
+
  art.innerHTML=`<div class="menu-water"><i class="menu-fish fish-a"></i><i class="menu-fish fish-b"></i><i class="menu-fish fish-c"></i><i class="menu-ray"></i></div>`;
  art.querySelectorAll('.menu-fish').forEach(fish=>{fish.innerHTML='<img src="assets/menu-fish-single-v2.png" alt="" draggable="false">';});
  const stage=document.createElement('div');stage.className='robot-performance';stage.setAttribute('role','img');stage.setAttribute('aria-label','Робот Аврора переливает светящийся реагент и ловит подброшенную колбу');
