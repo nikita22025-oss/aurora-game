@@ -20,6 +20,11 @@ export class BoardRenderer extends CanvasBoard{
   q.fillStyle='#fff5db';q.fillRect(125,100,105,300);q.fillStyle='#a5e5ff';q.fillRect(700,80,36,330);q.fillStyle='#e3cba6';q.fillRect(430,40,160,45);q.fillStyle='#fff9ed';q.fillRect(255,125,10,265);
   const texture=new T.CanvasTexture(env);texture.mapping=T.EquirectangularReflectionMapping;texture.colorSpace=T.SRGBColorSpace;const pmrem=new T.PMREMGenerator(this.gl);this.envTarget=pmrem.fromEquirectangular(texture);this.scene3.environment=this.envTarget.texture;texture.dispose();pmrem.dispose();
   this.scene3.add(new T.HemisphereLight('#d9f5ff','#314654',1.35));const key=new T.DirectionalLight('#fff1ce',3.0);key.position.set(-250,400,600);this.scene3.add(key);const rim=new T.DirectionalLight('#a4e6ff',1.7);rim.position.set(300,80,-100);this.scene3.add(rim);
+  // Reflection sample from the unobstructed liquid in the upright Vector tube.
+  const pixels = Uint8Array.from(atob("DLXBIcrWItjhA7nCGZSTGpaUIpKMHo2IHoN8Gn94HH5zH4F1J4h2Lo99MJaDNZqIOp+LOp+LOpuFN5mDM49+LIh3LYF0LH9zDLXBH8jTJtfhBLXAF5KRGZSTIpaRI5eSJZGKHoqDHIF3HIF3I4N6KIh+LIp8LYt9MY1+M49/NI1+MIp7L4Z7LYR4KYN2LIV4DLfCHMjSJ9jiA7S+FJCPGJOSIZeRI5mTJ5iSJpeRJpKLH4uEIIF8IYJ9J4R6KIV7LYl8Lop9LYh+KoV8KIN8KIN8JYl/LpKJC7rFG8rWJtfhA7S+FI2NGZKSH5SRIZeTJZiWJpmXKZmWKZmWKJSQIo+KIYqCIImBI4V9JYZ+JYZ+JYZ+I4mCLJGKMJ2WNaGaCrvFGsvWJtffAbK6EouNGZKUH5SRIZeTI5mYJZqZJp2XJ56YKJ+bKJ+bKJ6aJ52ZKZmWKZmWKZmWKpqXLZ2ZMKCdM6KfM6KfC73IGszXJtjdALK2EYyNGJOUG5aTHpiWIJqYIJqYIp2aJZ+dKJ+eKaCfKqGeLaSgLqWhLqWhLqWfLqWfL6WfLaKdLqKbL6SdD8DIH9DYLNjfA6+2EouLGZKSHpSTIJeWIpmYIpmYIZuZI56bJqCeJ6GfKKKgKqWiLaSgLaSgLqSgLqSgLqSgLaKfLqGdLqGdEMPIItbaL9nhA621EouLGZKSHpSTIJeWIZiXIpmYIZuZIp2aJZ+dJ6GfKKGhKqSkLaSgLaSgLqSgLqSgLqSgLaKfLqGfLaCeDcDKH9HbLNbeAauzE4yMGZKSGpSSHJeUHJaWH5iYIJqYIp2aJZ+dJqCeKKKgKaShLqSeLqSeLqSgLqSgLqSgLaKfLaKfLaKfDL7JH9HbKNLZAKivEYqKF5CQGZORG5aTHJaWH5iYIJqYIZuZI56bJqCeJ6GfKaShLaKdLqSeLqSeLaKdLaKfLaKfLqGfLqGfC73KHM/bJ8rUAJ+pDYOEF4yNGZORG5aTHJaWH5iYIZeYIpiZJZuaJ56dJqCeKKKgKqCaLaKdL6KeL6KeLqGdLqGdMKCdL5+bCrvKFMXUILnLAJKlD3x/G4mMG5KRH5aUIZiXIZiXI5mYI5mYJpuYKJ6aKZ+bLKGeLaCbLqGdMaGgMaGgMaCfMaCfMJ+bL56aCbrLC7zNE6e8AImeCnB4GX+IG4+PIZSUIpiXIpiXJZiYJpmZJ5qYKZ2aLZ2bLp6dLaCbLaCbMKCfMKCfNJ+fM56eMZ6ZMJ2YDL3PCbrLEqa7AIidBmdxEnN9G4qLJZOUIpaWIpaWJpaUJ5eWKJiUKZmWKpqXLJuYLp6YLp6YLZ2ZLZ2ZLp2bLp2bMZ2aMJuZEMbbDMPYGrDGAI2kBmdvDW52GoWIJZCSIpaWI5eXJpaUJpaUJ5eTJ5eTKZiUKpmWLJuWLJuWLJuaLZ2bLp6dLp6dMJ+eMaCfE83hE83hH7nQAJGoBmlwDG92GIOFI4+RIZeWIpiXI5mYJZqZJpmZJ5qaKJuZKZ2aKZ2aKZ2aKZ+bKqCdKqGeKqGeL5+bMaGeF83iF83iG7bJAI+hBmVuDGt0F3+DIouPIZSUI5eXJZiYJpmZI5mYJZqZJp2bJ56dKJ+eKJ+eKqCdKqCdKqCdKqCdLaCeLqGfGcreFsbaF6vAAIidC251E3Z9HIiKJpGTI5eXJZiYJZiYJZiYJZqZJpuaJZuaJp2bKJ6dKJ6dJ56aKJ+bKZ+bKqCdLaKfLaKf"), ch => ch.charCodeAt(0));
+  this.waterStudy = new T.DataTexture(pixels,24,18,T.RGBFormat);
+  this.waterStudy.magFilter = this.waterStudy.minFilter = T.LinearFilter;
+  this.waterStudy.needsUpdate = true;
   this.renderStream3d=true;
   const positions=new Float32Array(33*10*3),indices=[];for(let j=0;j<32;j++)for(let k=0;k<10;k++){const a=j*10+k,b=j*10+(k+1)%10;indices.push(a,b,a+10,b,b+10,a+10);}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();geo.attributes.position.setUsage(T.DynamicDrawUsage);geo.attributes.normal.setUsage(T.DynamicDrawUsage);
   this.stream=new T.Mesh(geo,new T.MeshPhysicalMaterial({color:'#62cddd',roughness:.035,metalness:0,transmission:0,thickness:2,ior:1.333,clearcoat:1,envMapIntensity:1.15,toneMapped:false,transparent:true,opacity:.88,emissive:'#ffffff',emissiveIntensity:.025}));this.stream.frustumCulled=false;this.scene3.add(this.stream);
@@ -40,7 +45,7 @@ export class BoardRenderer extends CanvasBoard{
   const shell=new T.Mesh(new T.LatheGeometry(outside,48),new T.MeshPhysicalMaterial({color:'#fffaf2',metalness:0,roughness:.075,transmission:0,thickness:2.0,ior:1.46,envMapIntensity:1.1,clearcoat:1,clearcoatRoughness:.08,side:T.DoubleSide,transparent:true,opacity:.095,depthWrite:false}));shell.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\ngl_FragColor.a *= .32 + .68 * pow(1.0-abs(dot(normal,normalize(vViewPosition))),2.0);');};root.add(shell);shell.renderOrder=4;
   const lip=new T.Mesh(new T.TorusGeometry(outer,.85,12,64),new T.MeshStandardMaterial({color:'#f7ead6',roughness:.10,metalness:.08,envMapIntensity:1.3}));lip.rotation.x=Math.PI/2;lip.position.y=top;root.add(lip);
   const collar=new T.Mesh(new T.TorusGeometry(outer-.45,.38,8,64),new T.MeshBasicMaterial({color:'#fff4df',transparent:true,opacity:.45,depthWrite:false}));collar.rotation.x=Math.PI/2;collar.position.y=top-1.8;root.add(collar);
-  const bottomGlow=new T.Mesh(new T.TorusGeometry(outer*.65,.65,8,48),new T.MeshBasicMaterial({color:'#e7faff',transparent:true,opacity:.48,depthWrite:false}));bottomGlow.rotation.x=Math.PI/2;bottomGlow.position.y=bottom+outer*.18;root.add(bottomGlow);
+
   // Pale silhouette makes the transparent wall readable against the dark bench.
   const edgeMaterial=new T.MeshBasicMaterial({color:'#e9f6fa',transparent:true,opacity:.46,depthWrite:false});
   const contour=[];contour.push(new T.Vector3(-outer,top,0),new T.Vector3(-outer,bottom+outer,0));for(let k=1;k<=32;k++){const a=Math.PI+k*Math.PI/32;contour.push(new T.Vector3(Math.cos(a)*outer,bottom+outer+Math.sin(a)*outer,0));}contour.push(new T.Vector3(outer,top,0));
@@ -50,7 +55,7 @@ export class BoardRenderer extends CanvasBoard{
    const highlight=new T.Mesh(new T.CapsuleGeometry(width,length,8,12),new T.MeshBasicMaterial({color:'#fff9ed',transparent:true,opacity,depthWrite:false}));
    highlight.position.set(side*outer*.64,top-h*.34,outer*.78);highlight.renderOrder=5;root.add(highlight);
   }
-  const uniforms={heights:{value:new T.Vector4(-1000,-1000,-1000,-1000)},colors:{value:COLORS.slice(0,4).map(c=>new T.Color(c))},time:{value:0},wave:{value:0},slope:{value:0},anchor:{value:0},center:{value:new T.Vector2()},radius:{value:r},capSpan:{value:1},inverse:{value:new T.Matrix4()},bottom:{value:innerBottom},top:{value:top},vesselHeight:{value:h},neckRadius:{value:w*LIP}};
+  const uniforms={waterStudy:{value:this.waterStudy},heights:{value:new T.Vector4(-1000,-1000,-1000,-1000)},colors:{value:COLORS.slice(0,4).map(c=>new T.Color(c))},time:{value:0},wave:{value:0},slope:{value:0},anchor:{value:0},center:{value:new T.Vector2()},radius:{value:r},capSpan:{value:1},inverse:{value:new T.Matrix4()},bottom:{value:innerBottom},top:{value:top},vesselHeight:{value:h},neckRadius:{value:w*LIP}};
   // Physical lighting is shared by the outer liquid surface and its cut planes.
   function liquidMaterial(capIndex=-1){return new T.ShaderMaterial({transparent:true,side:T.DoubleSide,forceSinglePass:true,toneMapped:false,
    uniforms:{...uniforms,capIndex:{value:capIndex},opacity:{value:1}},
@@ -59,7 +64,7 @@ export class BoardRenderer extends CanvasBoard{
     float waterHeight(vec2 p){float d=length(p)/radius;float u=clamp(p.x/radius,-1.,1.);return slope*u*(1.+.28*(1.-u*u))+wave*sin(d*6.-time*10.)*exp(-d*1.6)-anchor;}
     void main(){vec3 p=position,n=normal;if(capIndex>=0){p.x*=capSpan;p.y+=waterHeight(p.xz);float e=.35;float dx=(waterHeight(p.xz+vec2(e,0.))-waterHeight(p.xz-vec2(e,0.)))/(2.*e);float dz=(waterHeight(p.xz+vec2(0.,e))-waterHeight(p.xz-vec2(0.,e)))/(2.*e);n=normalize(vec3(-dx,1.,-dz));}
      liquidWorld=(modelMatrix*vec4(p,1.)).xyz;litNormal=normalize(normalMatrix*n);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
-   fragmentShader:`varying vec3 liquidWorld;varying vec3 litNormal;uniform vec4 heights;uniform vec3 colors[4];uniform float time,wave,slope,anchor,radius,bottom,top,opacity;uniform vec2 center;uniform mat4 inverse;uniform int capIndex;
+   fragmentShader:`uniform sampler2D waterStudy;varying vec3 liquidWorld;varying vec3 litNormal;uniform vec4 heights;uniform vec3 colors[4];uniform float time,wave,slope,anchor,radius,bottom,top,opacity;uniform vec2 center;uniform mat4 inverse;uniform int capIndex;
     void main(){vec2 delta=vec2(liquidWorld.x-center.x,liquidWorld.z-center.y);float distance=length(delta)/radius;
      float u=clamp(delta.x/radius,-1.,1.);float ripple=slope*u*(1.+.28*(1.-u*u))+wave*sin(distance*6.-time*10.)*exp(-distance*1.6)-anchor;float yy=liquidWorld.y-ripple;
      vec3 local=(inverse*vec4(liquidWorld,1.)).xyz;int band=capIndex;
@@ -70,10 +75,28 @@ export class BoardRenderer extends CanvasBoard{
      float edge=pow(1.-roundness,2.);
      float key=exp(-pow((across+.62)/.075,2.));
      float rim=exp(-pow((across-.82)/.055,2.));
-     vec3 light=color*(.20+.62*roundness)+color*color*.08;
-     light+=vec3(.035,.065,.075)*strip+vec3(.42,.47,.49)*key+vec3(.13,.22,.24)*rim;
-     light=mix(light,vec3(.21,.38,.42)+color*.36,edge*.45);
-     if(capIndex>=0){vec3 n=normalize(litNormal)*(gl_FrontFacing?1.:-1.);float glint=pow(max(0.,dot(n,normalize(vec3(-.35,.4,1.)))),32.);float meniscus=smoothstep(.86,1.,length(local.xz)/radius);light=color*.66+vec3(.25,.35,.36)*glint+vec3(.09,.20,.22)*meniscus;}
+     // Optical path through a round column of dyed water. Studio lights stay
+     // fixed in camera space as the bottle turns underneath them.
+     vec3 n=normalize(litNormal);
+     vec3 reflection=reflect(vec3(0.,0.,-1.),n);
+     float opticalDepth=.55+1.65*abs(n.z);
+     vec3 transmitted=exp(-opticalDepth*(1.-color)*2.4);
+     // Use the reference's curved illumination, retaining the puzzle dye.
+     vec2 studyUV=vec2(.5+.49*across,clamp((local.y-bottom)/(top-bottom),.02,.98));
+     vec3 studio=texture2D(waterStudy,studyUV).rgb;
+     float intensity=dot(studio,vec3(.15,.57,.28));
+     float pearl=smoothstep(.25,.84,studio.r);
+     vec3 light=color*(.16+intensity*intensity*1.22)+transmitted*.18;
+     light=mix(light,vec3(.82,.94,.98),pearl*.62);
+     float gloss=exp(-pow((reflection.x+.66)/.09,2.))*smoothstep(-.50,.60,reflection.z);
+     light+=vec3(.43,.40,.32)*gloss;
+     float heel=1.-smoothstep(0.,radius*.85,local.y-bottom);
+     light+=heel*(color*.40+vec3(.035,.085,.10));
+     if(capIndex>=0){
+      float meniscus=smoothstep(.82,1.,length(local.xz)/radius);
+      light=color*(.46+.24*n.y)+vec3(.13,.24,.25)*meniscus;
+      light+=vec3(.34,.39,.39)*exp(-pow((across+.50)/.20,2.))*.7;
+     }
      gl_FragColor=vec4(light,opacity);
      #include <colorspace_fragment>
     }`});}
@@ -154,7 +177,7 @@ export class BoardRenderer extends CanvasBoard{
       const bow = lateral * v * (1-v) * 4;
       const xx=lip[0]+(dest.x-lip[0])*v+bow;
       const yy=lip[1]+(endY-lip[1])*v,zz=(this.meshes[m.from]?.depth||0)*(1-v);
-      const r=(Math.min(p.w,dest.w)*.043+Math.min(m.n,3)*.16)*section.radius*(1+.012*Math.sin(v*14-now*.009));
+      const r=(Math.min(p.w,dest.w)*.056+Math.min(m.n,3)*.16)*section.radius*(1+.012*Math.sin(v*14-now*.009));
       // Circular cross sections perpendicular to the jet tangent avoid flat ribbons.
       const dx=dest.x-lip[0]+4*lateral*(1-2*v),dy=(endY-lip[1])/COS,len=Math.hypot(dx,dy)||1;
       for(let k=0;k<10;k++){const a=k*Math.PI/5,offset=Math.cos(a)*r;pos.setXYZ(j*10+k,xx-this.w/2+offset*dy/len,(this.h/2-yy)/COS+offset*dx/len+zz*CAMERA_SLOPE,zz+Math.sin(a)*r);}
@@ -195,5 +218,5 @@ export class BoardRenderer extends CanvasBoard{
   }
   if(this.perfPour){const p=this.perfPour;if(p.frames){p.intervals.push(now-p.last);if(m&&(now-m.start)/m.duration>.2&&(now-m.start)/m.duration<.85)p.middle.push(now-p.last);}p.frames++;p.cpu+=performance.now()-cpuStart;p.worst=Math.max(p.worst,now-p.last);p.last=now;if(!this.motion){console.info('AURORA_PERF '+JSON.stringify({fps:Math.round((p.frames-1)*1000/(now-p.start)),cpuMs:+(p.cpu/p.frames).toFixed(2),worstFrameMs:Math.round(p.worst),p95:p.intervals.slice().sort((a,b)=>a-b)[Math.floor(p.intervals.length*.95)],middleFPS:Math.round(p.middle.length*1000/p.middle.reduce((a,b)=>a+b,0)),bottles:this.board.length,triangles:this.gl.info.render.triangles}));this.perfPour=null;}}
  }
- destroy(){this.snapshotTexture?.dispose();this.snapshot?.geometry.dispose();this.snapshot?.material.dispose();super.destroy();this.clearMeshes();this.envTarget?.dispose();this.ripples?.forEach(r=>{r.geometry.dispose();r.material.dispose();});this.stream?.geometry.dispose();this.stream?.material.dispose();this.drops?.forEach(d=>d.geometry.dispose());if(this.gl){this.gl.dispose();this.gl.forceContextLoss();this.gl.domElement.remove();}}
+ destroy(){this.waterStudy?.dispose();this.snapshotTexture?.dispose();this.snapshot?.geometry.dispose();this.snapshot?.material.dispose();super.destroy();this.clearMeshes();this.envTarget?.dispose();this.ripples?.forEach(r=>{r.geometry.dispose();r.material.dispose();});this.stream?.geometry.dispose();this.stream?.material.dispose();this.drops?.forEach(d=>d.geometry.dispose());if(this.gl){this.gl.dispose();this.gl.forceContextLoss();this.gl.domElement.remove();}}
 }

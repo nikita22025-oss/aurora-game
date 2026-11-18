@@ -1,6 +1,6 @@
 // Dry mono liquid foley: damped bubble resonances only, no noise layer.
 // Shared with the preview renderer; no downloads or runtime dependencies.
-export const POUR_TIMING = Object.freeze({duration:1900, start:.30, end:.72});
+export const POUR_TIMING = Object.freeze({duration:2120, start:.30, end:.72});
 export function waterSamples(rate,{amount=1,fill=0,random=Math.random}={}){
  const flow=(POUR_TIMING.end-POUR_TIMING.start)*POUR_TIMING.duration/1000;
  const out=new Float32Array(Math.ceil(rate*(flow+.24)));

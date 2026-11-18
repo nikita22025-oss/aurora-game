@@ -10,4 +10,4 @@ export function boardLayout(width,height,n){
  return Array.from({length:n},(_,i)=>{const row=Math.floor(i/cols),count=Math.min(cols,n-row*cols);return {x:width/2+(i%cols-(count-1)/2)*gap,y:head+h/2+row*pitch,w,h};});
 }
 
-export const pourGap=(count,angle=0)=>count>=7?24+45*Math.cos(angle)**2:24;
+export const pourGap=(count,angle=0)=>count>=7?24+45*Math.cos(angle)**2:9;
